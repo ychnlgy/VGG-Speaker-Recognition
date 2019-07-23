@@ -26,6 +26,7 @@ def main(weight_path):
     net.load_weights(weight_path)
 
     print(net.count_params())
+    print(net.summary())
 
 if __name__ == "__main__":
 
