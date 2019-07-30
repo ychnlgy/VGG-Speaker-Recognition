@@ -39,40 +39,53 @@ def load_data(fpath):
         -1
     )
 
-def main(weight_path, wav_dir, slice_len, step_size, eps, min_samples, outpath):
+def main(weight_path, wav_dir, slice_len, step_size, eps, outpath):
+    model = DiarizerModel(weight_path, eps)
+    model.diarize(wav_dir, slice_len, step_size, outpath)
 
-    net = model.vggvox_resnet2d_icassp(
-        input_dim=(257, None, 1),
-        num_class=5994,
-        mode="eval",
-        args=DefaultEvalArgs()
-    )
+class DiarizerModel:
 
-    net.load_weights(weight_path)
+    def __init__(self, weight_path, cluster_threshold=0.9):
+        self.net = model.vggvox_resnet2d_icassp(
+            input_dim=(257, None, 1),
+            num_class=5994,
+            mode="eval",
+            args=DefaultEvalArgs()
+        )
+        self.net.load_weights(weight_path)
 
-    fpaths = pathlib.Path(wav_dir).rglob("*.wav")
-    fpaths = list(tqdm.tqdm(fpaths, desc="Collecting files", ncols=80))
+        self.cluster_threshold = cluster_threshold
 
-    decoder = []
-    encoded = []
+    def diarize(self, wav_dir, slice_len, step_size, outpath):
+        fpaths = pathlib.Path(wav_dir).rglob("*.wav")
+        fpaths = list(tqdm.tqdm(fpaths, desc="Collecting files", ncols=80))
 
-    for fpath in tqdm.tqdm(fpaths, ncols=80, desc="Processing spectrograms"):
-        dataloader = create_dataloader(fpath, slice_len, step_size)
-        embeddings = embed_slices(dataloader, net)
-        #dists = metric(embeddings)
-        results = []
-        clusterer = sklearn.cluster.KMeans(n_clusters=2)
-        clusterer.fit(embeddings)
-        c1, c2 = clusterer.cluster_centers_
-        print(fpath, (c1 * c2).sum() / numpy.linalg.norm(c1) / numpy.linalg.norm(c2)) 
-        labels = clusterer.labels_
-        label_len = len(labels)
-        key = int(os.path.basename(fpath)[:-4])
-        decoder.append([key, label_len])
-        encoded.append(labels)
+        decoder = []
+        encoded = []
 
-    out = [numpy.array(decoder), numpy.concatenate(encoded, axis=0)]
-    numpy.save(outpath, out)
+        for fpath in tqdm.tqdm(fpaths, ncols=80, desc="Processing spectrograms"):
+            dataloader = create_dataloader(fpath, slice_len, step_size)
+            embeddings = embed_slices(dataloader, self.net)
+            clusterer = sklearn.cluster.KMeans(n_clusters=2)
+            clusterer.fit(embeddings)
+            c1, c2 = clusterer.cluster_centers_
+            dist_c = cosine_sim(c1, c2)
+
+            if dist_c > self.cluster_threshold:
+                labels = clusterer.labels_
+            else:
+                labels = numpy.zeros(1, dtype=numpy.int32)
+
+            label_len = len(labels)
+            key = int(os.path.basename(fpath)[:-4])
+            decoder.append([key, label_len])
+            encoded.append(labels)
+
+        out = [numpy.array(decoder), numpy.concatenate(encoded, axis=0)]
+        numpy.save(path, out)
+
+def cosine_sim(v1, v2):
+    return (v1 * v2).sum() / numpy.linalg.norm(c1) / numpy.linalg.norm(c2)
 
 def create_dataloader(fpath, slice_len, step_size):
     spec = load_data(fpath)
@@ -97,12 +110,11 @@ if __name__ == "__main__":
     parser.add_argument("--slice_len", type=int, required=True)
     parser.add_argument("--step_size", type=int, required=True)
     parser.add_argument("--eps", type=float, required=True)
-    parser.add_argument("--min_samples", type=int, required=True)
     parser.add_argument("--outpath", required=True)
 
     args = parser.parse_args()
 
     main(
         args.weight_path, args.wave_dir, args.slice_len,
-        args.step_size, args.eps, args.min_samples, args.outpath
+        args.step_size, args.eps, args.outpath
     )
