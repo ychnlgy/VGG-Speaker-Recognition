@@ -12,6 +12,7 @@ class Dataset:
     """
 
     def __init__(self, spec, slice_size, step_size):
+        spec = spec.squeeze()
         assert len(spec.shape) == 2, spec.shape
         self._spec = numpy.expand_dims(spec, 0)  # (1, freq, time)
         self._slice_size = slice_size
