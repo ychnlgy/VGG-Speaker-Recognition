@@ -56,7 +56,7 @@ class DiarizerModel:
 
         self.cluster_threshold = cluster_threshold
 
-    def diarize(self, wav_dir, slice_len, step_size, outpath):
+    def diarize(self, wav_dir, slice_len=400, step_size=32, outpath="diarization-results.npy"):
         fpaths = pathlib.Path(wav_dir).rglob("*.wav")
         fpaths = list(tqdm.tqdm(fpaths, desc="Collecting files", ncols=80))
 
@@ -71,7 +71,7 @@ class DiarizerModel:
             c1, c2 = clusterer.cluster_centers_
             dist_c = cosine_sim(c1, c2)
 
-            if dist_c > self.cluster_threshold:
+            if dist_c < self.cluster_threshold:
                 labels = clusterer.labels_
             else:
                 labels = numpy.zeros(1, dtype=numpy.int32)
