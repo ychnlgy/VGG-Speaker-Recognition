@@ -41,9 +41,10 @@ def load_data(fpath):
 
 def main(weight_path, wav_dir, slice_len, step_size, dist_metric, outpath):
 
-    metric = {
-        "cosine": sklearn.metrics.pairwise.cosine_similarity
-    }[dist_metric]
+    #metric = {
+    #    "cosine": sklearn.metrics.pairwise.cosine_similarity
+    #}[dist_metric]
+    clusterer = sklearn.cluster.DBSCAN(eps=0.1, min_samples=5, metric="cosine")
 
     net = model.vggvox_resnet2d_icassp(
         input_dim=(257, None, 1),
@@ -63,14 +64,15 @@ def main(weight_path, wav_dir, slice_len, step_size, dist_metric, outpath):
     for fpath in tqdm.tqdm(fpaths, ncols=80, desc="Processing spectrograms"):
         dataloader = create_dataloader(fpath, slice_len, step_size)
         embeddings = embed_slices(dataloader, net)
-        dists = metric(embeddings)
-        #labels = clusterer.labels_
-        #label_len = len(labels)
+        #dists = metric(embeddings)
+        clusterer.fit(embeddings)
+        labels = clusterer.labels_
+        label_len = len(labels)
         key = int(os.path.basename(fpath)[:-4])
-        decoder.append(key)#, label_len])
-        encoded.append(dists)
+        decoder.append([key, label_len])
+        encoded.append(labels)
 
-    out = [numpy.array(decoder), numpy.array(encoded)]#numpy.concatenate(encoded, axis=0)]
+    out = [numpy.array(decoder), numpy.concatenate(encoded, axis=0)]
     numpy.save(outpath, out)
 
 def create_dataloader(fpath, slice_len, step_size):
