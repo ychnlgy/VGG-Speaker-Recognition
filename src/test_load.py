@@ -44,7 +44,7 @@ def main(weight_path, wav_dir, slice_len, step_size, dist_metric, outpath):
     #metric = {
     #    "cosine": sklearn.metrics.pairwise.cosine_similarity
     #}[dist_metric]
-    clusterer = sklearn.cluster.DBSCAN(eps=0.1, min_samples=5, metric="cosine")
+    clusterer = sklearn.cluster.DBSCAN(eps=0.01, min_samples=5, metric="cosine")
 
     net = model.vggvox_resnet2d_icassp(
         input_dim=(257, None, 1),
@@ -67,6 +67,7 @@ def main(weight_path, wav_dir, slice_len, step_size, dist_metric, outpath):
         #dists = metric(embeddings)
         clusterer.fit(embeddings)
         labels = clusterer.labels_
+        print(fpath, set(labels))
         label_len = len(labels)
         key = int(os.path.basename(fpath)[:-4])
         decoder.append([key, label_len])
