@@ -1,10 +1,12 @@
 """Test if the pre-trained weights can be loaded correctly.
 
 """
+import os
 import pathlib
 
 import keras
 import numpy
+import sklearn.cluster
 import tqdm
 
 import dataset
@@ -36,7 +38,11 @@ def load_data(fpath):
         -1
     )
 
-def main(weight_path, wav_dir, slice_len, step_size):
+def main(weight_path, wav_dir, slice_len, step_size, clusterer_id, outpath):
+
+    clusterer = {
+        "kmeans": sklearn.cluster.KMeans(n_clusters=1),
+    }[clusterer_id]
 
     net = model.vggvox_resnet2d_icassp(
         input_dim=(257, None, 1),
@@ -50,14 +56,21 @@ def main(weight_path, wav_dir, slice_len, step_size):
     fpaths = pathlib.Path(wav_dir).rglob("*.wav")
     fpaths = list(tqdm.tqdm(fpaths, desc="Collecting files", ncols=80))
 
+    decoder = []
+    encoded = []
+
     for fpath in tqdm.tqdm(fpaths, ncols=80, desc="Processing spectrograms"):
         dataloader = create_dataloader(fpath, slice_len, step_size)
         embeddings = embed_slices(dataloader, net)
-        print(embeddings.shape)
-        input("Temp stop")
-        # K-means or DBSCAN
-        # Return clusterer.labels_
-        raise NotImplementedError
+        clusterer.fit(embeddings)
+        labels = clusterer.labels_
+        label_len = len(labels)
+        key = int(os.path.basename(fpath)[:-4])
+        decoder.append([key, label_len])
+        encoded.append(labels)
+
+    out = [numpy.array(decoder), numpy.concatenate(encoded, axis=0)]
+    numpy.save(outpath, out)
 
 def create_dataloader(fpath, slice_len, step_size):
     spec = load_data(fpath)
@@ -81,7 +94,12 @@ if __name__ == "__main__":
     parser.add_argument("--wave_dir", required=True)
     parser.add_argument("--slice_len", type=int, required=True)
     parser.add_argument("--step_size", type=int, required=True)
+    parser.add_argument("--clusterer", required=True)
+    parser.add_argument("--outpath", required=True)
 
     args = parser.parse_args()
 
-    main(args.weight_path, args.wave_dir, args.slice_len, args.step_size)
+    main(
+        args.weight_path, args.wave_dir, args.slice_len,
+        args.step_size, args.clusterer, args.outpath
+    )
