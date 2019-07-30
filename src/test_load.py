@@ -41,11 +41,6 @@ def load_data(fpath):
 
 def main(weight_path, wav_dir, slice_len, step_size, eps, min_samples, outpath):
 
-    #metric = {
-    #    "cosine": sklearn.metrics.pairwise.cosine_similarity
-    #}[dist_metric]
-    clusterer = sklearn.cluster.DBSCAN(eps=eps, min_samples=min_samples, metric="cosine")
-
     net = model.vggvox_resnet2d_icassp(
         input_dim=(257, None, 1),
         num_class=5994,
@@ -65,9 +60,12 @@ def main(weight_path, wav_dir, slice_len, step_size, eps, min_samples, outpath):
         dataloader = create_dataloader(fpath, slice_len, step_size)
         embeddings = embed_slices(dataloader, net)
         #dists = metric(embeddings)
+        results = []
+        clusterer = sklearn.cluster.KMeans(n_clusters=2)
         clusterer.fit(embeddings)
+        c1, c2 = clusterer.cluster_centers_
+        print(fpath, (c1 * c2).sum() / numpy.linalg.norm(c1) / numpy.linalg.norm(c2)) 
         labels = clusterer.labels_
-        print(fpath, set(labels))
         label_len = len(labels)
         key = int(os.path.basename(fpath)[:-4])
         decoder.append([key, label_len])
