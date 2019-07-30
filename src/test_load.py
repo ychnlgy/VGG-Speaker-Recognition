@@ -70,15 +70,10 @@ class DiarizerModel:
             clusterer.fit(embeddings)
             c1, c2 = clusterer.cluster_centers_
             dist_c = cosine_sim(c1, c2)
-
-            if dist_c < self.cluster_threshold:
-                labels = clusterer.labels_
-            else:
-                labels = numpy.zeros(1, dtype=numpy.int32)
-
+            labels = clusterer.labels_
             label_len = len(labels)
             key = int(os.path.basename(fpath)[:-4])
-            decoder.append([key, label_len])
+            decoder.append([key, label_len, dist_c])
             encoded.append(labels)
 
         out = [numpy.array(decoder), numpy.concatenate(encoded, axis=0)]
