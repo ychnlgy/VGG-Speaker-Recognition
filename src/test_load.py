@@ -82,7 +82,7 @@ class DiarizerModel:
             encoded.append(labels)
 
         out = [numpy.array(decoder), numpy.concatenate(encoded, axis=0)]
-        numpy.save(path, out)
+        numpy.save(outpath, out)
 
 def cosine_sim(v1, v2):
     return (v1 * v2).sum() / numpy.linalg.norm(v1) / numpy.linalg.norm(v2)
