@@ -47,7 +47,7 @@ def main(weight_path, wav_dir, slice_len, step_size):
 
     net.load_weights(weight_path)
 
-    fpaths = pathlib.Path(weight_path).rglob("*.wav")
+    fpaths = pathlib.Path(wav_dir).rglob("*.wav")
     fpaths = list(tqdm.tqdm(fpaths, desc="Collecting files", ncols=80))
 
     for fpath in tqdm.tqdm(fpaths, ncols=80, desc="Processing spectrograms"):
