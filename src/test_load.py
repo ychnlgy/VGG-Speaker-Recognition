@@ -39,12 +39,12 @@ def load_data(fpath):
         -1
     )
 
-def main(weight_path, wav_dir, slice_len, step_size, dist_metric, outpath):
+def main(weight_path, wav_dir, slice_len, step_size, eps, min_samples, outpath):
 
     #metric = {
     #    "cosine": sklearn.metrics.pairwise.cosine_similarity
     #}[dist_metric]
-    clusterer = sklearn.cluster.DBSCAN(eps=0.01, min_samples=5, metric="cosine")
+    clusterer = sklearn.cluster.DBSCAN(eps=eps, min_samples=min_samples, metric="cosine")
 
     net = model.vggvox_resnet2d_icassp(
         input_dim=(257, None, 1),
@@ -98,12 +98,13 @@ if __name__ == "__main__":
     parser.add_argument("--wave_dir", required=True)
     parser.add_argument("--slice_len", type=int, required=True)
     parser.add_argument("--step_size", type=int, required=True)
-    parser.add_argument("--dist_metric", required=True)
+    parser.add_argument("--eps", type=float, required=True)
+    parser.add_argument("--min_samples", type=int, required=True)
     parser.add_argument("--outpath", required=True)
 
     args = parser.parse_args()
 
     main(
         args.weight_path, args.wave_dir, args.slice_len,
-        args.step_size, args.dist_metric, args.outpath
+        args.step_size, args.eps, args.min_samples, args.outpath
     )
