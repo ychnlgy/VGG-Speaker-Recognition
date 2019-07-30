@@ -68,7 +68,7 @@ def embed_slices(dataloader, net):
     out = []
     for i in range(len(dataloader)):
         batch = dataloader[i]
-        pred = network_eval.predict(batch)
+        pred = net.predict(batch)
         out.append(batch)
     return numpy.concatenate(out, axis=0)
 
