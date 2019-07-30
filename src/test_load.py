@@ -41,7 +41,7 @@ def load_data(fpath):
 def main(weight_path, wav_dir, slice_len, step_size, clusterer_id, outpath):
 
     clusterer = {
-        "kmeans": sklearn.cluster.KMeans(n_clusters=1),
+        "kmeans": sklearn.cluster.KMeans(n_clusters=2),
     }[clusterer_id]
 
     net = model.vggvox_resnet2d_icassp(
@@ -62,9 +62,9 @@ def main(weight_path, wav_dir, slice_len, step_size, clusterer_id, outpath):
     for fpath in tqdm.tqdm(fpaths, ncols=80, desc="Processing spectrograms"):
         dataloader = create_dataloader(fpath, slice_len, step_size)
         embeddings = embed_slices(dataloader, net)
-        print(embeddings[len(embeddings)//4])
-        print(embeddings[len(embeddings)//2])
-        input()
+        #print(embeddings[len(embeddings)//4])
+        #print(embeddings[len(embeddings)//2])
+        #input()
         clusterer.fit(embeddings)
         labels = clusterer.labels_
         label_len = len(labels)
