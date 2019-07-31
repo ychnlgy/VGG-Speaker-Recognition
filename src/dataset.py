@@ -19,7 +19,7 @@ class Dataset:
         self._slice_size = slice_size
         self._step_size = step_size
         self._dt = spec.shape[2]
-        self._len = math.ceil((self._dt - self._slice_size) / self._step_size)
+        self._len = max(math.ceil((self._dt - self._slice_size) / self._step_size), 1)
 
     def __len__(self):
         return self._len
@@ -34,7 +34,7 @@ class DataLoader(keras.utils.Sequence):
     def __init__(self, dataset, batch_size):
         self.dset = dataset
         self.batch = batch_size
-        self._len = math.ceil(len(self.dset) / self.batch)
+        self._len = max(math.ceil(len(self.dset) / self.batch), 1)
 
     def __len__(self):
         return self._len
