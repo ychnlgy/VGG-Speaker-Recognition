@@ -68,12 +68,14 @@ class DiarizerModel:
             embeddings = embed_slices(dataloader, self.net)
             clusterer = sklearn.cluster.KMeans(n_clusters=3)
             clusterer.fit(embeddings)
-            c1, c2 = clusterer.cluster_centers_
-            dist_c = cosine_sim(c1, c2)
+            c1, c2, c3 = clusterer.cluster_centers_
+            dist_c12 = cosine_sim(c1, c2)
+            dist_c13 = cosine_sim(c1, c3)
+            dist_c23 = cosine_sim(c2, c3)
             labels = clusterer.labels_
             label_len = len(labels)
             key = int(os.path.basename(fpath)[:-4])
-            decoder.append([key, label_len, dist_c])
+            decoder.append([key, label_len, dist_c12, dist_c13, dist_c23])
             encoded.append(labels)
 
         out = [numpy.array(decoder), numpy.concatenate(encoded, axis=0)]
