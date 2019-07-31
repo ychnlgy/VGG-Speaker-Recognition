@@ -66,7 +66,7 @@ class DiarizerModel:
         for fpath in tqdm.tqdm(fpaths, ncols=80, desc="Processing spectrograms"):
             dataloader = create_dataloader(fpath, slice_len, step_size)
             embeddings = embed_slices(dataloader, self.net)
-            clusters = min(len(embeddings), 3)
+            clusters = min(len(embeddings), 2)
             clusterer = sklearn.cluster.KMeans(n_clusters=clusters)
             clusterer.fit(embeddings)
             dist = sklearn.metrics.pairwise.cosine_similarity(clusterer.cluster_centers_)
