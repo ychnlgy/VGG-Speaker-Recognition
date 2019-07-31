@@ -19,7 +19,7 @@ class Dataset:
         self._slice_size = slice_size
         self._step_size = step_size
         self._dt = spec.shape[2]
-        self._len = (self._dt - self._slice_size) // self._step_size
+        self._len = math.ceil((self._dt - self._slice_size) / self._step_size)
 
     def __len__(self):
         return self._len
