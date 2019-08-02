@@ -39,9 +39,9 @@ def load_data(fpath):
         -1
     )
 
-def main(weight_path, wav_dir, slice_len, step_size, eps, outpath):
+def main(weight_path, wav_dir, slice_len, step_size, eps, outpath, max_clusters):
     model = DiarizerModel(weight_path, eps)
-    model.diarize(wav_dir, slice_len, step_size, outpath)
+    model.diarize(wav_dir, slice_len, step_size, outpath, max_clusters)
 
 class DiarizerModel:
 
@@ -56,7 +56,7 @@ class DiarizerModel:
 
         self.cluster_threshold = cluster_threshold
 
-    def diarize(self, wav_dir, slice_len=400, step_size=32, outpath="diarization-results.npy"):
+    def diarize(self, wav_dir, slice_len=400, step_size=32, outpath="diarization-results.npy", max_clusters=3):
         fpaths = pathlib.Path(wav_dir).rglob("*.wav")
         fpaths = list(tqdm.tqdm(fpaths, desc="Collecting files", ncols=80))
 
@@ -66,7 +66,7 @@ class DiarizerModel:
         for fpath in tqdm.tqdm(fpaths, ncols=80, desc="Processing spectrograms"):
             dataloader = create_dataloader(fpath, slice_len, step_size)
             embeddings = embed_slices(dataloader, self.net)
-            clusters = min(len(embeddings), 2)
+            clusters = min(len(embeddings), max_clusters)
             clusterer = sklearn.cluster.KMeans(n_clusters=clusters)
             clusterer.fit(embeddings)
             dist = sklearn.metrics.pairwise.cosine_similarity(clusterer.cluster_centers_)
@@ -106,10 +106,11 @@ if __name__ == "__main__":
     parser.add_argument("--step_size", type=int, required=True)
     parser.add_argument("--eps", type=float, required=True)
     parser.add_argument("--outpath", required=True)
+    parser.add_argument("--max_clusters", type=int, required=True)
 
     args = parser.parse_args()
 
     main(
         args.weight_path, args.wave_dir, args.slice_len,
-        args.step_size, args.eps, args.outpath
+        args.step_size, args.eps, args.outpath, args.max_clusters
     )
