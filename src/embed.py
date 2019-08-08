@@ -39,13 +39,13 @@ def load_data(fpath):
         -1
     )
 
-def main(weight_path, wav_dir, slice_len, step_size, eps, outpath, max_clusters):
-    model = DiarizerModel(weight_path, eps)
+def main(weight_path, wav_dir, slice_len, step_size, outpath, max_clusters):
+    model = DiarizerModel(weight_path)
     model.diarize(wav_dir, slice_len, step_size, outpath, max_clusters)
 
 class DiarizerModel:
 
-    def __init__(self, weight_path, cluster_threshold=0.9):
+    def __init__(self, weight_path):
         self.net = model.vggvox_resnet2d_icassp(
             input_dim=(257, None, 1),
             num_class=5994,
@@ -54,30 +54,25 @@ class DiarizerModel:
         )
         self.net.load_weights(weight_path)
 
-        self.cluster_threshold = cluster_threshold
-
     def diarize(self, wav_dir, slice_len=400, step_size=32, outpath="diarization-results.npy", max_clusters=3):
         fpaths = pathlib.Path(wav_dir).rglob("*.wav")
         fpaths = list(tqdm.tqdm(fpaths, desc="Collecting files", ncols=80))
 
-        decoder = []
-        encoded = []
+        with open(outpath, "wb") as savef:
 
-        for fpath in tqdm.tqdm(fpaths, ncols=80, desc="Processing spectrograms"):
-            dataloader = create_dataloader(fpath, slice_len, step_size)
-            embeddings = embed_slices(dataloader, self.net)
-            clusters = min(len(embeddings), max_clusters)
-            clusterer = sklearn.cluster.KMeans(n_clusters=clusters)
-            clusterer.fit(embeddings)
-            dist = sklearn.metrics.pairwise.cosine_similarity(clusterer.cluster_centers_)
-            labels = clusterer.labels_
-            label_len = len(labels)
-            key = int(os.path.basename(fpath)[:-4])
-            decoder.append([key, label_len, dist])
-            encoded.append(labels)
+            for fpath in tqdm.tqdm(fpaths, ncols=80, desc="Processing spectrograms"):
+                dataloader = create_dataloader(fpath, slice_len, step_size)
+                embeddings = embed_slices(dataloader, self.net)
+                clusters = min(len(embeddings), max_clusters)
+                clusterer = sklearn.cluster.KMeans(n_clusters=clusters)
+                clusterer.fit(embeddings)
+                dist = sklearn.metrics.pairwise.cosine_similarity(clusterer.cluster_centers_)
+                labels = clusterer.labels_
+                label_len = len(labels)
+                key = int(os.path.basename(fpath)[:-4])
 
-        out = [numpy.array(decoder), numpy.concatenate(encoded, axis=0)]
-        numpy.save(outpath, out)
+                data = numpy.array([key, label_len, dist, labels])
+                numpy.save(savef, data)
 
 def cosine_sim(v1, v2):
     return (v1 * v2).sum() / numpy.linalg.norm(v1) / numpy.linalg.norm(v2)
@@ -104,7 +99,6 @@ if __name__ == "__main__":
     parser.add_argument("--wave_dir", required=True)
     parser.add_argument("--slice_len", type=int, required=True)
     parser.add_argument("--step_size", type=int, required=True)
-    parser.add_argument("--eps", type=float, required=True)
     parser.add_argument("--outpath", required=True)
     parser.add_argument("--max_clusters", type=int, required=True)
 
@@ -112,5 +106,5 @@ if __name__ == "__main__":
 
     main(
         args.weight_path, args.wave_dir, args.slice_len,
-        args.step_size, args.eps, args.outpath, args.max_clusters
+        args.step_size, args.outpath, args.max_clusters
     )
